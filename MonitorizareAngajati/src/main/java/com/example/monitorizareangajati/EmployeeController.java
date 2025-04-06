@@ -26,8 +26,6 @@
         @FXML
         private Button logoutButton;
 
-        @FXML
-        private Text messageText;
 
         @FXML
         public void initialize() {
