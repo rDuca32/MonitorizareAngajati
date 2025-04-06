@@ -1,24 +1,27 @@
 package domain;
 
 public class Time {
-    private int hour;
-    private int minute;
+    private int hours;
+    private int minutes;
 
-    public Time(int hour, int minute) {
-        this.hour = hour;
-        this.minute = minute;
+    public Time(int hours, int minutes) {
+        this.hours = hours;
+        this.minutes = minutes;
     }
 
-    public int getHour() {
-        return hour;
+    public int getHours() {
+        return hours;
     }
 
-    public int getMinute() {
-        return minute;
+    public void setHours(int hours) {
+        this.hours = hours;
     }
 
-    @Override
-    public String toString() {
-        return String.format("%02d:%02d", hour, minute);
+    public int getMinutes() {
+        return minutes;
+    }
+
+    public void setMinutes(int minutes) {
+        this.minutes = minutes;
     }
 }

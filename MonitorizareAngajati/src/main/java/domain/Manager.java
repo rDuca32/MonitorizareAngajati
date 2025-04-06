@@ -4,23 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Manager extends User {
-    private int managerId;
     private String name;
     private List<Employee> employees;
 
-    public Manager(String username, String password, UserType type, int managerId, String name) {
-        super(username, password, type);
-        this.managerId = managerId;
+    public Manager(int managerId, String username, String password, String name) {
+        super(managerId, username, password, UserType.MANAGER);
         this.name = name;
         this.employees = new ArrayList<>();
     }
 
-    public int getManagerId() {
-        return managerId;
-    }
-
     public String getName() {
         return name;
+    }
+
+    public List<Employee> getEmployees() {
+        return employees;
     }
 
     public List<Employee> viewPresentEmployees() {
@@ -31,5 +29,9 @@ public class Manager extends User {
             }
         }
         return presentEmployees;
+    }
+
+    public void addEmployee(Employee employee) {
+        this.employees.add(employee);
     }
 }

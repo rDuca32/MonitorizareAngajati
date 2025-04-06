@@ -1,16 +1,18 @@
 package domain;
 
-public class User {
+public abstract class User extends Entity {
     private String username;
     private String password;
     private UserType type;
 
-    public User(String username, String password, UserType type) {
+    public User(int id, String username, String password, UserType type) {
+        super(id);
         this.username = username;
         this.password = password;
         this.type = type;
     }
 
+    // Getters and setters
     public String getUsername() {
         return username;
     }

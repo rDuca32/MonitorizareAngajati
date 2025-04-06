@@ -1,5 +1,6 @@
 package com.example.monitorizareangajati;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -8,6 +9,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import service.LoginService;
+import service.NotificationService;
 
 public class ManagerController {
 
@@ -23,26 +27,37 @@ public class ManagerController {
     @FXML
     private Text messageText;
 
+    @FXML
+    private Button logoutButton;
+
     private ObservableList<String> employeeList = FXCollections.observableArrayList();
-
-    private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    private void showInfo(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+    private LoginService loginService;
 
     @FXML
     public void initialize() {
-        employeeListView.setItems(employeeList);
+        // Inițializare listă angajați
         employeeList.addAll("Employee 1 - 09:00", "Employee 2 - 09:15");
+        employeeListView.setItems(employeeList);
+
+        // Înregistrare controller în serviciul de notificări
+        NotificationService.getInstance().registerManagerController(this);
+    }
+
+    // Metodă apelată de NotificationService când un angajat se deconectează
+    public void showEmployeeLogout(String employeeName) {
+        Platform.runLater(() -> {
+            // Actualizează interfața
+            messageText.setText(employeeName + " s-a deconectat la " + java.time.LocalTime.now());
+
+            // Afișează alertă
+            showAlert(Alert.AlertType.INFORMATION, "Deconectare",
+                    employeeName + " a părăsit sistemul.");
+        });
+    }
+
+    // Curăță resursele la închiderea ferestrei
+    public void cleanup() {
+        NotificationService.getInstance().unregisterManagerController(this);
     }
 
     @FXML
@@ -51,26 +66,44 @@ public class ManagerController {
         String taskDescription = taskDescriptionArea.getText();
 
         if (selectedEmployee == null || taskDescription.isEmpty()) {
-            showError("Input Error", "Select an employee and enter task description.");
+            showAlert(Alert.AlertType.ERROR, "Eroare", "Selectați un angajat și introduceți o descriere");
             return;
         }
 
-        int employeeId = extractEmployeeId(selectedEmployee);
-
-        if (employeeId != -1) {
-            showInfo("Task Assigned", "Task '" + taskDescription + "' assigned to " + selectedEmployee);
+        try {
+            int employeeId = extractEmployeeId(selectedEmployee);
+            showAlert(Alert.AlertType.INFORMATION, "Succes",
+                    "Sarcina a fost atribuită angajatului " + employeeId);
             taskDescriptionArea.clear();
-        } else {
-            showError("Selection Error", "Invalid employee selection.");
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Eroare", "ID angajat invalid");
         }
     }
 
-    private int extractEmployeeId(String selectedEmployee) {
+    private int extractEmployeeId(String employeeEntry) {
+        String[] parts = employeeEntry.split(" - ");
+        return Integer.parseInt(parts[0].replace("Employee ", ""));
+    }
+
+    @FXML
+    protected void onLogoutButtonClick() {
         try {
-            String[] parts = selectedEmployee.split(" - ");
-            return Integer.parseInt(parts[0].replace("Employee ", ""));
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            return -1;
+            Stage stage = (Stage) logoutButton.getScene().getWindow();
+            HelloApplication.openUserView(stage);
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Eroare", "Eroare la deconectare");
         }
+    }
+
+    public void setLoginService(LoginService loginService) {
+        this.loginService = loginService;
+    }
+
+    private void showAlert(Alert.AlertType type, String title, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

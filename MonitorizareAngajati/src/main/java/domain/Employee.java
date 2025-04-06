@@ -5,21 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Employee extends User {
-    private int employeeId;
     private String name;
     private Time arrivalTime;
     private boolean isPresent;
     private List<Task> tasks;
 
-    public Employee(String username, String password, UserType type, int employeeId, String name) {
-        super(username, password, type);
-        this.employeeId = employeeId;
+    public Employee(int employeeId, String username, String password, String name) {
+        super(employeeId, username, password, UserType.EMPLOYEE);
         this.name = name;
         this.tasks = new ArrayList<>();
-    }
-
-    public int getEmployeeId() {
-        return employeeId;
+        this.isPresent = false;
     }
 
     public String getName() {
@@ -34,14 +29,14 @@ public class Employee extends User {
         return isPresent;
     }
 
+    public List<Task> getTasks() {
+        return tasks;
+    }
+
     public void markPresence() {
         LocalTime now = LocalTime.now();
         this.arrivalTime = new Time(now.getHour(), now.getMinute());
         this.isPresent = true;
-    }
-
-    public List<Task> viewTasks() {
-        return tasks;
     }
 
     public void addTask(Task task) {

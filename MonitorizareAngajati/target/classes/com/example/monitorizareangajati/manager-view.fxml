@@ -17,6 +17,7 @@
         <VBox spacing="10.0">
             <TextArea fx:id="taskDescriptionArea" promptText="Task Description" prefHeight="150.0" />
             <Button fx:id="assignTaskButton" text="Assign Task" onAction="#onAssignTaskButtonClick" />
+            <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick" />
         </VBox>
     </HBox>
     <Text fx:id="messageText" />

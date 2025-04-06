@@ -1,22 +1,16 @@
 package domain;
 
-public class Task {
-    private int taskId;
+public class Task extends Entity {
     private String description;
     private int employeeId;
     private TaskStatus status;
-
     private static int nextTaskId = 1;
 
     public Task(String description, int employeeId) {
-        this.taskId = nextTaskId++;
+        super(nextTaskId++);
         this.description = description;
         this.employeeId = employeeId;
         this.status = TaskStatus.PENDING;
-    }
-
-    public int getTaskId() {
-        return taskId;
     }
 
     public String getDescription() {
@@ -33,5 +27,9 @@ public class Task {
 
     public TaskStatus getStatus() {
         return status;
+    }
+
+    public void setStatus(TaskStatus status) {
+        this.status = status;
     }
 }
