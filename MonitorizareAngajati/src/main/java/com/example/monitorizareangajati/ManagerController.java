@@ -10,8 +10,12 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import service.LoginService;
-import service.NotificationService;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ManagerController {
 
@@ -31,34 +35,14 @@ public class ManagerController {
     private Button logoutButton;
 
     private ObservableList<String> employeeList = FXCollections.observableArrayList();
-    private LoginService loginService;
 
-    @FXML
-    public void initialize() {
-        // Inițializare listă angajați
-        employeeList.addAll("Employee 1 - 09:00", "Employee 2 - 09:15");
-        employeeListView.setItems(employeeList);
-
-        // Înregistrare controller în serviciul de notificări
-        NotificationService.getInstance().registerManagerController(this);
-    }
-
-    // Metodă apelată de NotificationService când un angajat se deconectează
-    public void showEmployeeLogout(String employeeName) {
+    public void showEmployeeLogout(String employeeLine) {
         Platform.runLater(() -> {
-            // Actualizează interfața
-            messageText.setText(employeeName + " s-a deconectat la " + java.time.LocalTime.now());
-
-            // Afișează alertă
-            showAlert(Alert.AlertType.INFORMATION, "Deconectare",
-                    employeeName + " a părăsit sistemul.");
+            messageText.setText(employeeLine);
+            showAlert(Alert.AlertType.INFORMATION, "Logout", employeeLine);
         });
     }
 
-    // Curăță resursele la închiderea ferestrei
-    public void cleanup() {
-        NotificationService.getInstance().unregisterManagerController(this);
-    }
 
     @FXML
     protected void onAssignTaskButtonClick() {
@@ -66,17 +50,17 @@ public class ManagerController {
         String taskDescription = taskDescriptionArea.getText();
 
         if (selectedEmployee == null || taskDescription.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Eroare", "Selectați un angajat și introduceți o descriere");
+            showAlert(Alert.AlertType.ERROR, "Error", "Select an employee and enter a task description");
             return;
         }
 
         try {
             int employeeId = extractEmployeeId(selectedEmployee);
             showAlert(Alert.AlertType.INFORMATION, "Succes",
-                    "Sarcina a fost atribuită angajatului " + employeeId);
+                    "Task assigned to " + selectedEmployee + ": " + taskDescription);
             taskDescriptionArea.clear();
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Eroare", "ID angajat invalid");
+            showAlert(Alert.AlertType.ERROR, "Error", "Error while assigning task");
         }
     }
 
@@ -91,12 +75,8 @@ public class ManagerController {
             Stage stage = (Stage) logoutButton.getScene().getWindow();
             HelloApplication.openUserView(stage);
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Eroare", "Eroare la deconectare");
+            showAlert(Alert.AlertType.ERROR, "Error", "Error while logging out");
         }
-    }
-
-    public void setLoginService(LoginService loginService) {
-        this.loginService = loginService;
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {
@@ -106,4 +86,50 @@ public class ManagerController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    private List<String> seenNotifications = new ArrayList<>();
+    private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";
+
+
+    private void startNotificationPolling() {
+        Timer timer = new Timer(true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                File file = new File(FILE_PATH);
+                if (!file.exists()) return;
+
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!seenNotifications.contains(line)) {
+                            seenNotifications.add(line);
+                            String finalLine = line;
+                            Platform.runLater(() -> showEmployeeLogout(finalLine));
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 5000);
+    }
+
+    @FXML
+    public void initialize() {
+        employeeList.addAll("Employee 1 - 09:00", "Employee 2 - 09:15");
+        employeeListView.setItems(employeeList);
+
+        clearNotificationFile();
+        startNotificationPolling();
+    }
+
+    private void clearNotificationFile() {
+        try (PrintWriter writer = new PrintWriter(FILE_PATH)) {
+            writer.print("");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

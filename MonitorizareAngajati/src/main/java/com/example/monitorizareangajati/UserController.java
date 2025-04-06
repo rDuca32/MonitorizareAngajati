@@ -89,10 +89,8 @@ public class UserController {
         Stage stage = (Stage) loginButton.getScene().getWindow();
         try {
             if (user.isManager()) {
-                System.out.println("Opening manager view for: " + user.getUsername());
                 HelloApplication.openManagerView(stage, user.getUsername());
             } else {
-                System.out.println("Opening employee view for: " + user.getUsername());
                 HelloApplication.openEmployeeView(stage, user.getUsername());
             }
         } catch (Exception e) {

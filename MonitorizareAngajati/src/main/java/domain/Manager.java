@@ -34,4 +34,8 @@ public class Manager extends User {
     public void addEmployee(Employee employee) {
         this.employees.add(employee);
     }
+
+    public void receiveLogoutNotification(Employee employee) {
+        System.out.println("Employee " + employee.getName() + " has logged out.");
+    }
 }

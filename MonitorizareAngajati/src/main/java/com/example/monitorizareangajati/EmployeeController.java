@@ -1,18 +1,16 @@
     package com.example.monitorizareangajati;
 
-    import domain.Task;
     import domain.Time;
-    import javafx.animation.PauseTransition;
     import javafx.fxml.FXML;
     import javafx.scene.control.Alert;
     import javafx.scene.control.Button;
     import javafx.scene.control.TextArea;
     import javafx.scene.text.Text;
     import javafx.stage.Stage;
-    import javafx.util.Duration;
-    import service.NotificationService;
 
+    import java.io.FileWriter;
     import java.io.IOException;
+    import java.io.PrintWriter;
     import java.time.LocalTime;
 
     public class EmployeeController {
@@ -50,19 +48,28 @@
 
         @FXML
         protected void onMarkPresenceButtonClick() {
-            LocalTime now = LocalTime.now();
-            int hour = now.getHour();
-            int minute = now.getMinute();
-
-            Time arrivalTime = new Time(hour, minute);
-
-            showAlert(Alert.AlertType.INFORMATION, "Presence Marked", "Your presence has been marked at " + arrivalTime.toString());
+            Time arrivalTime = Time.fromLocalTime(LocalTime.now());
+            showAlert(Alert.AlertType.INFORMATION, "Prezență marcată",
+                    "Prezența ta a fost înregistrată la ora " + arrivalTime);
         }
+
+        private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";
+
+        private void writeLogoutToFile(String employeeName) {
+            Time logoutTime = Time.fromLocalTime(LocalTime.now());
+            try (PrintWriter out = new PrintWriter(new FileWriter(FILE_PATH, true))) {
+                out.println(employeeName + " disconnected at " + logoutTime);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
 
         @FXML
         protected void onLogoutButtonClick() {
+            writeLogoutToFile(employeeName);
+
             try {
-                NotificationService.getInstance().notifyLogout(employeeName);
                 Stage stage = (Stage) logoutButton.getScene().getWindow();
                 HelloApplication.openUserView(stage);
             } catch (Exception e) {
