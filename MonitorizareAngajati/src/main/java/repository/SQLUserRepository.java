@@ -38,7 +38,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
                 connection = ds.getConnection();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Eroare la conectarea cu baze de date", e);
+            throw new RuntimeException("Error connecting to the database: " + e.getMessage());
         }
     }
 
@@ -78,7 +78,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
             statement.executeUpdate();
             collection.add(user);
         } catch (SQLException e) {
-            throw new RepositoryException("Eroare la adaugarea utilizatorului: " + e.getMessage());
+            throw new RepositoryException("Error adding user: " + e.getMessage());
         }
     }
 
@@ -90,7 +90,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
             statement.executeUpdate();
             collection.remove(user);
         } catch (SQLException e) {
-            throw new RepositoryException("Eroare la stergerea utilizatorului: " + e.getMessage());
+            throw new RepositoryException("Error deleting user: " + e.getMessage());
         }
     }
 
@@ -105,7 +105,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
             statement.setInt(5, user.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RepositoryException("Eroare la actualizarea utilizatorului: " + e.getMessage());
+            throw new RepositoryException("Error updating user: " + e.getMessage());
         }
     }
 
