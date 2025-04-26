@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SQLTaskRepository extends MemoryRepository<Task> implements AutoCloseable {
-    private static final String JDBC_URL = "jdbc:sqlite:/home/ducaraul/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db";
+    private static final String JDBC_URL = "jdbc:sqlite:C:/Users/rauld/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db";
     private Connection connection;
 
     public SQLTaskRepository() {
