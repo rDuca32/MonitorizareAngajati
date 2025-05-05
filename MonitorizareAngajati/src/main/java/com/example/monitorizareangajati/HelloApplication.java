@@ -1,14 +1,30 @@
 package com.example.monitorizareangajati;
+import domain.EntityConverter;
+import domain.Task;
+import domain.TaskConverter;
+import domain.User;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import repository.MemoryRepository;
+import repository.SQLTaskRepository;
 import repository.SQLUserRepository;
+import repository.TextFileRepository;
 
 
 import java.io.IOException;
 
 public class HelloApplication extends Application {
+
+    public static MemoryRepository<User> userRepository;
+    public static MemoryRepository<Task> taskRepository;
+
+    static SQLUserRepository sqlUserRepository = new SQLUserRepository();
+
+    private static final String TASKS_FILE_PATH = "MonitorizareAngajati/tasks.txt";
+    static EntityConverter<Task> converter = new TaskConverter();
+    static TextFileRepository tasksRepo = new TextFileRepository<>(TASKS_FILE_PATH, converter);
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -17,7 +33,6 @@ public class HelloApplication extends Application {
 
     public static void openUserView(Stage stage) throws IOException {
         try {
-            SQLUserRepository sqlUserRepository = new SQLUserRepository();
 
             FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("user-view.fxml"));
             Scene scene = new Scene(fxmlLoader.load(), 600, 400);
@@ -43,6 +58,9 @@ public class HelloApplication extends Application {
 
         EmployeeController controller = loader.getController();
         controller.setEmployeeName(employeeName);
+        controller.initialize();
+        controller.setRepositories(sqlUserRepository, tasksRepo);
+        controller.initializeAfterRepo();
 
         stage.setTitle("Employee - " + employeeName);
         stage.setScene(scene);
@@ -52,6 +70,11 @@ public class HelloApplication extends Application {
     public static void openManagerView(Stage stage, String managerName) throws IOException {
         FXMLLoader loader = new FXMLLoader(HelloApplication.class.getResource("manager-view.fxml"));
         Scene scene = new Scene(loader.load(), 600, 400);
+
+        ManagerController controller = loader.getController();
+        controller.setManagerName(managerName);
+        controller.initialize();
+        controller.setRepositories(sqlUserRepository, tasksRepo);
 
         stage.setTitle("Manager Panel - " + managerName);
         stage.setScene(scene);

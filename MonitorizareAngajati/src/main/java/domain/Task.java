@@ -1,13 +1,14 @@
 package domain;
 
-public class Task extends Entity {
+import java.io.Serializable;
+
+public class Task extends Entity implements Serializable {
     private String description;
     private int employeeId;
     private TaskStatus status;
-    private static int nextTaskId = 1;
 
-    public Task(String description, int employeeId) {
-        super(nextTaskId++);
+    public Task(int id, String description, int employeeId, TaskStatus status) {
+        super(id);
         this.description = description;
         this.employeeId = employeeId;
         this.status = TaskStatus.PENDING;

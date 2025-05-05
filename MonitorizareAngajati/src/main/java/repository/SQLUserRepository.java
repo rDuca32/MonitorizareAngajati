@@ -149,17 +149,20 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
         System.out.println("Initial users added to the database.");
     }
 
-    private void removeAll() throws RepositoryException {
+    public Integer getEmployeeIdByName(String employeeName) {
         try {
-            String sql = "DELETE FROM users";
+            String sql = "SELECT id FROM users WHERE username = ? AND role = 'employee'";
             PreparedStatement statement = connection.prepareStatement(sql);
-            statement.executeUpdate();
+            statement.setString(1, employeeName);
 
-            collection.clear();
-
-            System.out.println("All users removed from the database and memory.");
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id");
+            }
+            return null;
         } catch (SQLException e) {
-            throw new RepositoryException("Error removing all users: " + e.getMessage());
+            System.err.println("[ERROR] getEmployeeIdByName: " + e.getMessage());
+            return null;
         }
     }
 }

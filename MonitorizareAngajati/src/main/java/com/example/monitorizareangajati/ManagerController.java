@@ -1,5 +1,7 @@
 package com.example.monitorizareangajati;
 
+import domain.Task;
+import domain.TaskStatus;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,12 +12,12 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import repository.SQLTaskRepository;
+import repository.SQLUserRepository;
+import repository.TextFileRepository;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class ManagerController {
 
@@ -29,11 +31,25 @@ public class ManagerController {
     private Button assignTaskButton;
 
     @FXML
+    private String managerName;
+
+    @FXML
     private Text messageText;
 
     @FXML
     private Button logoutButton;
 
+    private SQLUserRepository sqlUserRepository;
+    private TextFileRepository tasksTextFileRepository;
+
+    public void setRepositories(SQLUserRepository sqlUserRepository, TextFileRepository tasksTextFileRepository) {
+        this.sqlUserRepository = sqlUserRepository;
+        this.tasksTextFileRepository = tasksTextFileRepository;
+    }
+
+    public void setManagerName(String managerName) {
+        this.managerName = managerName;
+    }
 
     private ObservableList<String> employeeList = FXCollections.observableArrayList();
 
@@ -62,11 +78,16 @@ public class ManagerController {
         });
     }
 
+    private int randomIdGenerator() {
+        Random random = new Random();
+        return 1000 + random.nextInt(9000);
+    }
 
     @FXML
     protected void onAssignTaskButtonClick() {
         String selectedEmployee = employeeListView.getSelectionModel().getSelectedItem();
         String taskDescription = taskDescriptionArea.getText();
+        TaskStatus status = TaskStatus.PENDING;
 
         if (selectedEmployee == null || taskDescription.isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "Select an employee and enter a task description");
@@ -74,19 +95,33 @@ public class ManagerController {
         }
 
         try {
-            int employeeId = extractEmployeeId(selectedEmployee);
-            showAlert(Alert.AlertType.INFORMATION, "Succes",
-                    "Task assigned to " + selectedEmployee + ": " + taskDescription);
+            int employeeId = findEmployeeIdByName(selectedEmployee);
+            int taskId = randomIdGenerator();
+            Task task = new Task(taskId, taskDescription, employeeId, status);
+            tasksTextFileRepository.add(task);
+
+            showAlert(Alert.AlertType.INFORMATION, "Succes", "Task assigned to " + selectedEmployee + ": " + taskDescription);
             taskDescriptionArea.clear();
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error while assigning task");
+            e.printStackTrace();
         }
     }
 
-    private int extractEmployeeId(String employeeEntry) {
+    private int findEmployeeIdByName(String employeeEntry) throws Exception {
         String[] parts = employeeEntry.split(" - ");
-        return Integer.parseInt(parts[0].replace("Employee ", ""));
+        if (parts.length < 1) {
+            throw new Exception("Invalid employee entry format: " + employeeEntry);
+        }
+        String username = parts[0].trim();
+
+        Integer employeeId = sqlUserRepository.getEmployeeIdByName(username);
+        if (employeeId == null) {
+            throw new Exception("Employee '" + username + "' not found in database");
+        }
+        return employeeId;
     }
+
 
     @FXML
     protected void onLogoutButtonClick() {
@@ -107,14 +142,14 @@ public class ManagerController {
     }
 
     private List<String> seenNotifications = new ArrayList<>();
-    private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";
+    private static final String NOTIF_FILE_PATH = "MonitorizareAngajati/notificari.txt";
 
     private void startNotificationPolling() {
         Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                File file = new File(FILE_PATH);
+                File file = new File(NOTIF_FILE_PATH);
                 if (!file.exists()) return;
 
                 try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -174,7 +209,7 @@ public class ManagerController {
     }
 
     private void clearNotificationFile() {
-        try (PrintWriter writer = new PrintWriter(FILE_PATH)) {
+        try (PrintWriter writer = new PrintWriter(NOTIF_FILE_PATH)) {
             writer.print("");
         } catch (IOException e) {
             e.printStackTrace();
