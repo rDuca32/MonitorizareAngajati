@@ -34,12 +34,21 @@ public class ManagerController {
     @FXML
     private Button logoutButton;
 
+
     private ObservableList<String> employeeList = FXCollections.observableArrayList();
 
     public void showEmployeeLogout(String employeeLine) {
         Platform.runLater(() -> {
             messageText.setText(employeeLine);
             showAlert(Alert.AlertType.INFORMATION, "Logout", employeeLine);
+        });
+    }
+
+    public void showEmployeeLogin(String employeeLine) {
+        Platform.runLater(() -> {
+            employeeList.add(employeeLine);
+            messageText.setText(employeeLine);
+            showAlert(Alert.AlertType.INFORMATION, "Login", employeeLine);
         });
     }
 
@@ -90,7 +99,6 @@ public class ManagerController {
     private List<String> seenNotifications = new ArrayList<>();
     private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";
 
-
     private void startNotificationPolling() {
         Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -115,17 +123,52 @@ public class ManagerController {
         }, 0, 5000);
     }
 
+    private static final String PRESENCE_FILE_PATH = "MonitorizareAngajati/prezenta.txt";
+    private List<String> seenPresence = new ArrayList<>();
+
+    private void startPresencePolling() {
+        Timer timer = new Timer(true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                File file = new File(PRESENCE_FILE_PATH);
+                if(!file.exists()) return;
+
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                        String line;
+                        while((line = reader.readLine()) != null){
+                            if (!seenPresence.contains(line)) {
+                                seenPresence.add(line);
+                                String finalLine = line;
+                                Platform.runLater(() -> showEmployeeLogin(finalLine));
+                            }
+                        }
+                } catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 5000);
+    }
+
     @FXML
     public void initialize() {
-        employeeList.addAll("Employee 1 - 09:00", "Employee 2 - 09:15");
         employeeListView.setItems(employeeList);
-
         clearNotificationFile();
+        clearPresenceFile();
         startNotificationPolling();
+        startPresencePolling();
     }
 
     private void clearNotificationFile() {
         try (PrintWriter writer = new PrintWriter(FILE_PATH)) {
+            writer.print("");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void clearPresenceFile() {
+        try (PrintWriter writer = new PrintWriter(PRESENCE_FILE_PATH)) {
             writer.print("");
         } catch (IOException e) {
             e.printStackTrace();

@@ -5,6 +5,7 @@
     import javafx.scene.control.Alert;
     import javafx.scene.control.Button;
     import javafx.scene.control.TextArea;
+    import javafx.scene.control.TextField;
     import javafx.scene.text.Text;
     import javafx.stage.Stage;
 
@@ -22,6 +23,9 @@
 
         @FXML
         private Button markPresenceButton;
+
+        @FXML
+        private TextField arrivalHour;
 
         @FXML
         private Button logoutButton;
@@ -44,11 +48,27 @@
             alert.showAndWait();
         }
 
+        private static final String PRESENCE_FILE_NAME = "MonitorizareAngajati/prezenta.txt";
+
         @FXML
         protected void onMarkPresenceButtonClick() {
-            Time arrivalTime = Time.fromLocalTime(LocalTime.now());
-            showAlert(Alert.AlertType.INFORMATION, "Prezență marcată",
-                    "Prezența ta a fost înregistrată la ora " + arrivalTime);
+            String arrivalHourText = arrivalHour.getText();
+
+            if (arrivalHourText.isEmpty()){
+                showAlert(Alert.AlertType.ERROR, "Attention", "Arrival hour is empty");
+                return;
+            }
+
+            try {
+                LocalTime.parse(arrivalHourText);
+
+                try (PrintWriter out = new PrintWriter(new FileWriter(PRESENCE_FILE_NAME, true))){
+                    out.println(employeeName + " " + arrivalHourText);
+                }
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Arrival hour market successfully");
+            } catch (IOException e) {
+                showAlert(Alert.AlertType.ERROR, "Attention", "Arrival hour market failed. Use (HH:MM)");
+            }
         }
 
         private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";

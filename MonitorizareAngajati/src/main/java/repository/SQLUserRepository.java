@@ -12,6 +12,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
     private Connection connection;
 
     public SQLUserRepository() {
+
         openConnection();
         createSchema();
         loadData();
@@ -127,8 +128,8 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
 
     private void InitialValues(){
         List<User> users = new ArrayList<>();
-        String[] usernames = {"manager", "employee1", "employee2", "employee3"};
-        String[] passwords = {"manager123", "employee123", "employee123", "employee123"};
+        String[] usernames = {"m", "e1", "e2", "e3"};
+        String[] passwords = {"m123", "e123", "e123", "e123"};
 
         String[] names = {"Boss", "John Doe", "Jane Smith", "Alice Johnson"};
 
@@ -151,5 +152,19 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
         }
 
         System.out.println("Initial users added to the database.");
+    }
+
+    private void removeAll() throws RepositoryException {
+        try {
+            String sql = "DELETE FROM users";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.executeUpdate();
+
+            collection.clear();
+
+            System.out.println("All users removed from the database and memory.");
+        } catch (SQLException e) {
+            throw new RepositoryException("Error removing all users: " + e.getMessage());
+        }
     }
 }
