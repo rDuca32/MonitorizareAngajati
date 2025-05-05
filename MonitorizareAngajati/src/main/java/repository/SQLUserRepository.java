@@ -24,7 +24,7 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
     private void createSchema() {
         try {
             try (final Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("create table if not exists users (id int primary key, username varchar(50), password varchar(50), name varchar(50), role varchar(50))");
+                stmt.executeUpdate("create table if not exists users (id int primary key, username varchar(50), password varchar(50), role varchar(50))");
             }
         } catch (SQLException e) {
             System.err.println("[ERROR] createSchema : " + e.getMessage());
@@ -51,14 +51,13 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
                 int id = rs.getInt("id");
                 String username = rs.getString("username");
                 String password = rs.getString("password");
-                String name = rs.getString("name");
                 String role = rs.getString("role");
 
                 User user;
                 if (role.equals("manager")) {
-                    user = new Manager(id, username, password, name);
+                    user = new Manager(id, username, password);
                 } else {
-                    user = new Employee(id, username, password, name);
+                    user = new Employee(id, username, password);
                 }
                 collection.add(user);
             }
@@ -69,13 +68,12 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
 
     public void add(User user) throws RepositoryException {
         try {
-            String sql = "INSERT INTO users (id, username, password, name, role) VALUES (?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setInt(1, user.getId());
             statement.setString(2, user.getUsername());
             statement.setString(3, user.getPassword());
-            statement.setString(4, user.getClass().getName());
-            statement.setString(5, user instanceof Manager ? "manager" : "employee");
+            statement.setString(4, user instanceof Manager ? "manager" : "employee");
             statement.executeUpdate();
             collection.add(user);
         } catch (SQLException e) {
@@ -97,13 +95,12 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
 
     public void update(User user) throws RepositoryException {
         try {
-            String sql = "UPDATE users SET username = ?, password = ?, name = ?, role = ? WHERE id = ?";
+            String sql = "UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, user.getUsername());
             statement.setString(2, user.getPassword());
-            statement.setString(3, user.getClass().getName());
-            statement.setString(4, user instanceof Manager ? "manager" : "employee");
-            statement.setInt(5, user.getId());
+            statement.setString(3, user instanceof Manager ? "manager" : "employee");
+            statement.setInt(4, user.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new RepositoryException("Error updating user: " + e.getMessage());
@@ -131,14 +128,12 @@ public class SQLUserRepository extends MemoryRepository<User> implements AutoClo
         String[] usernames = {"m", "e1", "e2", "e3"};
         String[] passwords = {"m123", "e123", "e123", "e123"};
 
-        String[] names = {"Boss", "John Doe", "Jane Smith", "Alice Johnson"};
-
         for (int i = 0; i < usernames.length; i++) {
             User user;
             if (i == 0) {
-                user = new Manager(i + 1, usernames[i], passwords[i], names[i]);
+                user = new Manager(i + 1, usernames[i], passwords[i]);
             } else {
-                user = new Employee(i + 1, usernames[i], passwords[i], names[i]);
+                user = new Employee(i + 1, usernames[i], passwords[i]);
             }
             users.add(user);
         }

@@ -63,20 +63,21 @@
                 LocalTime.parse(arrivalHourText);
 
                 try (PrintWriter out = new PrintWriter(new FileWriter(PRESENCE_FILE_NAME, true))){
-                    out.println(employeeName + " " + arrivalHourText);
+                    out.println(employeeName + " - " + arrivalHourText);
                 }
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Arrival hour market successfully");
             } catch (IOException e) {
-                showAlert(Alert.AlertType.ERROR, "Attention", "Arrival hour market failed. Use (HH:MM)");
+                showAlert(Alert.AlertType.ERROR, "Error", "Arrival hour market failed. Use (HH:MM)");
             }
         }
 
         private static final String FILE_PATH = "MonitorizareAngajati/notificari.txt";
 
         private void writeLogoutToFile(String employeeName) {
-            Time logoutTime = Time.fromLocalTime(LocalTime.now());
+            // Time logoutTime = Time.fromLocalTime(LocalTime.now());
             try (PrintWriter out = new PrintWriter(new FileWriter(FILE_PATH, true))) {
-                out.println(employeeName + " disconnected at " + logoutTime);
+                String logoutEntry = "LOGOUT:" + employeeName;
+                out.println(logoutEntry);
             } catch (IOException e) {
                 e.printStackTrace();
             }

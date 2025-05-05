@@ -39,8 +39,18 @@ public class ManagerController {
 
     public void showEmployeeLogout(String employeeLine) {
         Platform.runLater(() -> {
-            messageText.setText(employeeLine);
-            showAlert(Alert.AlertType.INFORMATION, "Logout", employeeLine);
+            try {
+                String[] parts = employeeLine.split(":");
+                if (parts.length < 2) return;
+                String employeeName = parts[1].trim();
+
+                employeeList.removeIf(entry -> entry.startsWith(employeeName + " - "));
+
+                messageText.setText(employeeName + " has logged out");
+                showAlert(Alert.AlertType.INFORMATION, "Logout", employeeName + " has logged out");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
     }
 
@@ -113,7 +123,11 @@ public class ManagerController {
                         if (!seenNotifications.contains(line)) {
                             seenNotifications.add(line);
                             String finalLine = line;
-                            Platform.runLater(() -> showEmployeeLogout(finalLine));
+                            Platform.runLater(() -> {
+                                if (finalLine.startsWith("LOGOUT:")){
+                                    showEmployeeLogout(finalLine);
+                                }
+                            });
                         }
                     }
                 } catch (IOException e) {
@@ -174,5 +188,4 @@ public class ManagerController {
             e.printStackTrace();
         }
     }
-
 }

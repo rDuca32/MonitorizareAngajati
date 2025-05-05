@@ -4,17 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Manager extends User {
-    private String name;
     private List<Employee> employees;
 
-    public Manager(int managerId, String username, String password, String name) {
+    public Manager(int managerId, String username, String password) {
         super(managerId, username, password, UserType.MANAGER);
-        this.name = name;
         this.employees = new ArrayList<>();
-    }
-
-    public String getName() {
-        return name;
     }
 
     public List<Employee> getEmployees() {
@@ -36,6 +30,6 @@ public class Manager extends User {
     }
 
     public void receiveLogoutNotification(Employee employee) {
-        System.out.println("Employee " + employee.getName() + " has logged out.");
+        System.out.println("Employee " + employee.getUsername()+ " has logged out.");
     }
 }
