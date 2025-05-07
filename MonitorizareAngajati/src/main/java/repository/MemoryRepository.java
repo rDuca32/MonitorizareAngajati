@@ -9,21 +9,21 @@ public class MemoryRepository <T extends Entity> extends AbstractRepository<T> {
     @Override
     public void add(T elem) throws RepositoryException {
         if (find(elem.getId()) != null)
-            throw new DuplicateIDException("Exista deja - " + elem.getId());
+            throw new DuplicateIDException("A duplicate ID was found");
         collection.add(elem);
     }
 
     @Override
     public void remove(T elem) throws RepositoryException {
         if(!collection.remove(find(elem.getId())))
-            throw new RepositoryException("Nu a fost gasit - " + elem.getId());
+            throw new RepositoryException("No such ID was found");
     }
 
     @Override
     public void update(T elem) throws RepositoryException {
         T existingItem = find(elem.getId());
         if (existingItem == null) {
-            throw new RepositoryException("Nu a fost gasit - " + elem.getId());
+            throw new RepositoryException("No such ID was found");
         }
         collection.remove(existingItem);
         collection.add(elem);

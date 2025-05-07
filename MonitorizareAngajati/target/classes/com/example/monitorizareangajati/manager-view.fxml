@@ -8,17 +8,23 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.monitorizareangajati.ManagerController">
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.monitorizareangajati.ManagerController"
+      alignment="CENTER"
+      spacing="20.0">
+
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
-    <HBox spacing="20.0">
-        <ListView fx:id="employeeListView" prefWidth="200.0" />
-        <VBox spacing="10.0">
-            <TextArea fx:id="taskDescriptionArea" promptText="Task Description" prefHeight="150.0" />
-            <Button fx:id="assignTaskButton" text="Assign Task" onAction="#onAssignTaskButtonClick" />
-            <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick" />
+
+    <HBox spacing="20.0" alignment="CENTER">
+        <ListView fx:id="employeeListView" prefWidth="200.0" prefHeight="300.0"/>
+        <VBox spacing="10.0" prefWidth="300.0">
+            <TextArea fx:id="taskDescriptionArea" promptText="Task Description" prefHeight="150.0" wrapText="true"/>
+            <Button fx:id="assignTaskButton" text="Assign Task" onAction="#onAssignTaskButtonClick" maxWidth="Infinity"/>
+            <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick" maxWidth="Infinity"/>
         </VBox>
     </HBox>
-    <Text fx:id="messageText" />
+    <Text fx:id="messageText" style="-fx-font-size: 14px;"/>
 </VBox>

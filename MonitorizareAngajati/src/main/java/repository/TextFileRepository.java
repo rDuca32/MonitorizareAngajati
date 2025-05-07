@@ -2,11 +2,7 @@ package repository;
 
 import domain.Entity;
 import domain.EntityConverter;
-
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class TextFileRepository<T extends Entity> extends AbstractFileRepository<T> {
 
@@ -18,7 +14,7 @@ public class TextFileRepository<T extends Entity> extends AbstractFileRepository
         try {
             loadFile();
         } catch (RepositoryException e) {
-            throw new RuntimeException("Nu s-a reusit incarcarea datelor din fisier.", e);
+            throw new RuntimeException("Failed to load file " + fileName, e);
         }
     }
 
@@ -31,7 +27,7 @@ public class TextFileRepository<T extends Entity> extends AbstractFileRepository
                 writer.newLine();
             }
         } catch (IOException e) {
-            throw new RepositoryException("Eroare la salvarea in fisierul text.", e);
+            throw new RepositoryException("Error saving file " + fileName, e);
         }
     }
 
@@ -44,9 +40,9 @@ public class TextFileRepository<T extends Entity> extends AbstractFileRepository
                 line = reader.readLine();
             }
         } catch (FileNotFoundException e) {
-            System.out.println("Fisierul nu a fost gasit. Initializare un fisier .txt gol.");
+            System.out.println("File not found: " + fileName);
         } catch (IOException e) {
-            throw new RepositoryException("Eroare la citirea din fisierul text.", e);
+            throw new RepositoryException("Error loading file " + fileName, e);
         }
     }
 }

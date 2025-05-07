@@ -2,22 +2,27 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ListView?>
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.monitorizareangajati.EmployeeController">
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.monitorizareangajati.EmployeeController"
+      alignment="CENTER"
+      spacing="20.0">
+
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
-    <ListView fx:id="tasksListView" prefWidth="100.0" />
-    <HBox spacing="10.0">
-        <TextField fx:id="arrivalHour" promptText="Enter arrival time (HH:MM)" />
-        <Button fx:id="markPresenceButton" text="Mark Presence" onAction="#onMarkPresenceButtonClick" />
-        <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick" />
+
+    <ListView fx:id="tasksListView" prefWidth="400.0" prefHeight="300.0"/>
+    <HBox spacing="10.0" alignment="CENTER">
+        <TextField fx:id="arrivalHour" promptText="Enter arrival time (HH:MM)" prefWidth="200.0"/>
+        <Button fx:id="markPresenceButton" text="Mark Presence" onAction="#onMarkPresenceButtonClick"/>
+        <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick"/>
     </HBox>
-    <Text fx:id="messageText" />
+    <Text fx:id="messageText" style="-fx-font-size: 14px;"/>
 </VBox>

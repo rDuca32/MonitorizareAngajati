@@ -2,11 +2,7 @@ package repository;
 
 import domain.*;
 import org.sqlite.SQLiteDataSource;
-
-import java.io.ObjectInputFilter;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SQLTaskRepository extends MemoryRepository<Task> implements AutoCloseable {
     private static final String JDBC_URL = "jdbc:sqlite:C:/Users/rauld/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db";

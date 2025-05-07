@@ -12,7 +12,6 @@ public abstract class User extends Entity {
         this.type = type;
     }
 
-    // Getters and setters
     public String getUsername() {
         return username;
     }
@@ -35,10 +34,6 @@ public abstract class User extends Entity {
 
     public void setType(UserType type) {
         this.type = type;
-    }
-
-    public boolean authenticate(String username, String password) {
-        return this.username.equals(username) && this.password.equals(password);
     }
 
     public boolean isManager() {

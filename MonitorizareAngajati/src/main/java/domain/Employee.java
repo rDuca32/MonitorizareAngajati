@@ -27,16 +27,6 @@ public class Employee extends User {
         return tasks;
     }
 
-    public void markPresence() {
-        LocalTime now = LocalTime.now();
-        this.arrivalTime = new Time(now.getHour(), now.getMinute());
-        this.isPresent = true;
-    }
-
-    public void addTask(Task task) {
-        this.tasks.add(task);
-    }
-
     public void logout() {
         this.isPresent = false;
     }

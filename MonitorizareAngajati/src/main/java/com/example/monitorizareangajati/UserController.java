@@ -8,6 +8,7 @@ import javafx.stage.Stage;
 import repository.SQLUserRepository;
 import service.LoginService;
 import service.LoginException;
+import utils.AlertUtil;
 
 public class UserController {
     @FXML private TextField usernameField;
@@ -18,37 +19,39 @@ public class UserController {
     private UserType selectedRole;
     private LoginService loginService;
 
-    public UserController() {
+    public UserController() {}
 
+    @FXML
+    public void initialize() {
+        setupRoleMenu();
+        setupLoginButton();
+    }
+
+    private void setupRoleMenu() {
+        userMenu.getItems().clear();
+
+        MenuItem managerItem = new MenuItem("Manager");
+        MenuItem employeeItem = new MenuItem("Employee");
+
+        managerItem.setOnAction(e -> selectRole(UserType.MANAGER, "Manager"));
+        employeeItem.setOnAction(e -> selectRole(UserType.EMPLOYEE, "Employee"));
+
+        userMenu.getItems().addAll(managerItem, employeeItem);
+    }
+
+    private void selectRole(UserType role, String displayText) {
+        selectedRole = role;
+        userMenu.setText(displayText);
+    }
+
+    private void setupLoginButton() {
+        loginButton.setOnAction(e -> handleLogin());
     }
 
     public void setRepositories(SQLUserRepository sqlUserRepository) {
         this.loginService = new LoginService(sqlUserRepository);
     }
 
-    @FXML
-    public void initialize() {
-        userMenu.getItems().clear();
-
-        MenuItem managerItem = new MenuItem("Manager");
-        MenuItem employeeItem = new MenuItem("Employee");
-
-        managerItem.setOnAction(e -> {
-            selectedRole = UserType.MANAGER;
-            userMenu.setText("Manager");
-        });
-
-        employeeItem.setOnAction(e -> {
-            selectedRole = UserType.EMPLOYEE;
-            userMenu.setText("Employee");
-        });
-
-        userMenu.getItems().addAll(managerItem, employeeItem);
-
-        loginButton.setOnAction(e -> handleLogin());
-    }
-
-    @FXML
     private void handleLogin() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
@@ -59,30 +62,32 @@ public class UserController {
 
         try {
             User user = loginService.login(username, password);
-
-            if ((selectedRole == UserType.MANAGER && !user.isManager()) ||
-                    (selectedRole == UserType.EMPLOYEE && !user.isEmployee())) {
-                throw new LoginException("Please select the correct role.");
-            }
+            validateUserRole(user);
             redirectBasedOnRole(user);
-
         } catch (LoginException e) {
-            showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
+            AlertUtil.showErrorAlert(e.getMessage());
         }
     }
 
     private boolean validateInputs(String username, String password) {
         if (username.isEmpty() || password.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Invalid input", "Username and password cannot be empty");
+            AlertUtil.showErrorAlert("Username and password cannot be empty.");
             return false;
         }
 
         if (selectedRole == null) {
-            showAlert(Alert.AlertType.WARNING, "Unselected role", "Select a role");
+            AlertUtil.showErrorAlert("Selected role cannot be empty.");
             return false;
         }
 
         return true;
+    }
+
+    private void validateUserRole(User user) throws LoginException {
+        if ((selectedRole == UserType.MANAGER && !user.isManager()) ||
+                (selectedRole == UserType.EMPLOYEE && !user.isEmployee())) {
+            throw new LoginException("Please select the correct role.");
+        }
     }
 
     private void redirectBasedOnRole(User user) {
@@ -94,15 +99,7 @@ public class UserController {
                 HelloApplication.openEmployeeView(stage, user.getUsername());
             }
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Failed to open view: " + e.getMessage());
+            AlertUtil.showErrorAlert(e.getMessage());
         }
-    }
-
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }

@@ -2,7 +2,6 @@ package service;
 
 import domain.*;
 import repository.SQLUserRepository;
-import repository.RepositoryException;
 import java.util.Objects;
 
 public class LoginService {
