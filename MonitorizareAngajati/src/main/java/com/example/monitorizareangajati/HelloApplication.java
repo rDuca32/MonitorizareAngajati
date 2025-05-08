@@ -1,23 +1,19 @@
 package com.example.monitorizareangajati;
 
-import domain.EntityConverter;
 import domain.Task;
-import domain.TaskConverter;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import repository.SQLTaskRepository;
 import repository.SQLUserRepository;
-import repository.TextFileRepository;
 
 import java.io.IOException;
 
 public class HelloApplication extends Application {
-    private static final String TASKS_FILE_PATH = "MonitorizareAngajati/tasks.txt";
 
     static SQLUserRepository sqlUserRepository = new SQLUserRepository();
-    static EntityConverter<Task> converter = new TaskConverter();
-    static TextFileRepository tasksRepo = new TextFileRepository<>(TASKS_FILE_PATH, converter);
+    static SQLTaskRepository sqlTaskRepository = new SQLTaskRepository();
 
     public static void main(String[] args) {
         launch(args);
@@ -54,7 +50,7 @@ public class HelloApplication extends Application {
         EmployeeController controller = loader.getController();
         controller.setEmployeeName(employeeName);
         controller.initialize();
-        controller.setRepositories(sqlUserRepository, tasksRepo);
+        controller.setRepositories(sqlUserRepository, sqlTaskRepository);
         controller.initializeAfterRepo();
 
         stage.setTitle("Employee - " + employeeName);
@@ -69,7 +65,7 @@ public class HelloApplication extends Application {
         ManagerController controller = loader.getController();
         controller.setManagerName(managerName);
         controller.initialize();
-        controller.setRepositories(sqlUserRepository, tasksRepo);
+        controller.setRepositories(sqlUserRepository, sqlTaskRepository);
 
         stage.setTitle("Manager Panel - " + managerName);
         stage.setScene(scene);

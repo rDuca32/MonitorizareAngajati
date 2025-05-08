@@ -1,7 +1,7 @@
 package com.example.monitorizareangajati;
 
 import domain.Task;
-import domain.TaskConverter;
+import domain.TaskStatus;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,21 +9,19 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import repository.SQLTaskRepository;
 import repository.SQLUserRepository;
-import repository.TextFileRepository;
 import utils.AlertUtil;
 
 import java.io.*;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class EmployeeController {
-    private static final String TASKS_FILE_PATH = "MonitorizareAngajati/tasks.txt";
     private static final String PRESENCE_FILE_NAME = "MonitorizareAngajati/prezenta.txt";
-    private static final String NOTIF_FILE_PATH = "MonitorizareAngajati/notificari.txt";
+    private static final String NOTIFICATION_FILE_PATH = "MonitorizareAngajati/notificari.txt";
+    private static final String NO_TASKS_MESSAGE = "No tasks assigned yet";
 
     @FXML private Text messageText;
     @FXML private String employeeName;
@@ -32,11 +30,14 @@ public class EmployeeController {
     @FXML private Button logoutButton;
     @FXML private ListView<String> tasksListView;
 
-    private ObservableList<String> tasksList = FXCollections.observableArrayList();
-    private List<String> seenTasks = new ArrayList<>();
+    private final ObservableList<String> tasksList = FXCollections.observableArrayList();
+    private final Set<Integer> knownTaskIds = new HashSet<>();
+    private Integer employeeId;
 
     private SQLUserRepository sqlUserRepository;
-    private TextFileRepository tasksTextFileRepository;
+    private SQLTaskRepository sqlTaskRepository;
+
+    private Timer tasksPollingTimer;
 
     @FXML
     public void initialize() {
@@ -44,13 +45,22 @@ public class EmployeeController {
     }
 
     public void initializeAfterRepo() {
-        loadEmployeeTasks();
-        startTasksPolling();
+        try {
+            this.employeeId = sqlUserRepository.getEmployeeIdByName(employeeName);
+            if (employeeId == null) {
+                showError("Employee not found: " + employeeName);
+                return;
+            }
+            loadEmployeeTasks();
+            startTasksPolling();
+        } catch (Exception e) {
+            showError("Error initializing controller: " + e.getMessage());
+        }
     }
 
-    public void setRepositories(SQLUserRepository sqlUserRepository, TextFileRepository tasksTextFileRepository) {
+    public void setRepositories(SQLUserRepository sqlUserRepository, SQLTaskRepository sqlTaskRepository) {
         this.sqlUserRepository = sqlUserRepository;
-        this.tasksTextFileRepository = tasksTextFileRepository;
+        this.sqlTaskRepository = sqlTaskRepository;
     }
 
     public void setEmployeeName(String name) {
@@ -60,37 +70,34 @@ public class EmployeeController {
     private void loadEmployeeTasks() {
         try {
             tasksList.clear();
-            Integer employeeId = sqlUserRepository.getEmployeeIdByName(employeeName);
+            knownTaskIds.clear();
 
-            if (employeeId == null) {
-                AlertUtil.showErrorAlert("Employee not found" + employeeName);
+            List<Task> employeeTasks = getEmployeeTasks();
+
+            if (employeeTasks.isEmpty()) {
+                tasksList.add(NO_TASKS_MESSAGE);
                 return;
             }
 
-            List<Task> allTasks = (List<Task>) tasksTextFileRepository.getAll();
-            boolean hasTasks = false;
-
-            for (Task task : allTasks) {
-                if (task.getEmployeeId() == employeeId) {
-                    String taskDisplay = String.format("ID: %d | %s | Status: %s",
-                            task.getId(), task.getDescription(), task.getStatus());
-                    tasksList.add(taskDisplay);
-                    hasTasks = true;
-                }
-            }
-
-            if (!hasTasks) {
-                tasksList.add("No tasks assigned yet");
-            }
+            employeeTasks.forEach(this::addTaskToList);
         } catch (Exception e) {
-            AlertUtil.showErrorAlert("Failed to load tasks" + e.getMessage());
-            e.printStackTrace();
+            showError("Failed to load tasks: " + e.getMessage());
         }
     }
 
+    private List<Task> getEmployeeTasks() {
+        List<Task> allTasks = (List<Task>) sqlTaskRepository.getAll();
+        if (allTasks == null) {
+            return Collections.emptyList();
+        }
+
+        return allTasks.stream().filter(Objects::nonNull).filter(task -> employeeId.equals(task.getEmployeeId())).collect(Collectors.toList());
+    }
+
     private void startTasksPolling() {
-        Timer timer = new Timer(true);
-        timer.scheduleAtFixedRate(new TimerTask() {
+        stopTasksPolling();
+        tasksPollingTimer = new Timer(true);
+        tasksPollingTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 checkForNewTasks();
@@ -98,87 +105,112 @@ public class EmployeeController {
         }, 0, 5000);
     }
 
-    private void checkForNewTasks() {
-        File file = new File(TASKS_FILE_PATH);
-        if (!file.exists()) return;
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!seenTasks.contains(line)) {
-                    seenTasks.add(line);
-                    String finalLine = line;
-                    Platform.runLater(() -> showNewTasks(finalLine));
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void stopTasksPolling() {
+        if (tasksPollingTimer != null) {
+            tasksPollingTimer.cancel();
+            tasksPollingTimer = null;
         }
     }
 
-    private void showNewTasks(String taskLine) {
+    private void checkForNewTasks() {
         try {
-            TaskConverter converter = new TaskConverter();
-            Task newTask = converter.fromString(taskLine);
-            Integer employeeId = sqlUserRepository.getEmployeeIdByName(employeeName);
+            sqlTaskRepository.reload();
 
-            if (employeeId != null && newTask.getEmployeeId() == employeeId) {
-                String taskDisplay = String.format("ID: %d | %s | Status: %s", newTask.getId(), newTask.getDescription(), newTask.getStatus());
+            List<Task> currentTasks = getEmployeeTasks();
 
-                if (!tasksList.contains(taskDisplay)) {
-                    tasksList.add(taskDisplay);
+            Platform.runLater(() -> {
+                boolean hasNewTasks = false;
 
-                    if (tasksList.size() > 1 && tasksList.get(0).equals("No tasks assigned yet")) {
-                        tasksList.remove(0);
+                for (Task task : currentTasks) {
+                    if (!knownTaskIds.contains(task.getId())) {
+                        addTaskToList(task);
+                        hasNewTasks = true;
                     }
                 }
-            }
+
+                if (hasNewTasks && !tasksList.isEmpty() && NO_TASKS_MESSAGE.equals(tasksList.get(0))) {
+                    tasksList.remove(0);
+                }
+            });
         } catch (Exception e) {
-            System.err.println("Error processing new task: " + e.getMessage());
+            System.err.println("Error checking for new tasks: " + e.getMessage());
         }
+    }
+
+
+    private void addTaskToList(Task task) {
+        if (task == null) return;
+
+        String taskDisplay = formatTaskDisplay(task);
+
+        if (!tasksList.contains(taskDisplay)) {
+            tasksList.add(taskDisplay);
+            knownTaskIds.add(task.getId());
+        }
+    }
+
+    private String formatTaskDisplay(Task task) {
+        return String.format("ID: %d | %s | Status: %s", task.getId(), Optional.ofNullable(task.getDescription()).orElse("No description"), Optional.ofNullable(task.getStatus()).orElse(TaskStatus.PENDING));
     }
 
     @FXML
     protected void onMarkPresenceButtonClick() {
         String arrivalHourText = arrivalHour.getText();
 
-        if (arrivalHourText.isEmpty()) {
-            AlertUtil.showErrorAlert("Arrival hour cannot be empty");
+        if (arrivalHourText == null || arrivalHourText.trim().isEmpty()) {
+            showError("Arrival hour cannot be empty");
             return;
         }
 
         try {
-            LocalTime.parse(arrivalHourText);
-            writePresenceToFile(employeeName, arrivalHourText);
-            AlertUtil.showInfoAlert("Successfully marked presence");
+            LocalTime.parse(arrivalHourText.trim());
+            writePresenceToFile(employeeName, arrivalHourText.trim());
+            showInfo("Successfully marked presence");
         } catch (Exception e) {
-            AlertUtil.showErrorAlert("Failed to mark presence" + e.getMessage());
+            showError("Invalid time format or failed to mark presence: " + e.getMessage());
         }
     }
 
     @FXML
     protected void onLogoutButtonClick() {
+        stopTasksPolling();
         writeLogoutToFile(employeeName);
 
         try {
             Stage stage = (Stage) logoutButton.getScene().getWindow();
             HelloApplication.openUserView(stage);
         } catch (Exception e) {
-            AlertUtil.showErrorAlert(e.getMessage());
+            showError(e.getMessage());
         }
     }
 
     private void writePresenceToFile(String employeeName, String arrivalTime) throws IOException {
+        if (employeeName == null || arrivalTime == null) return;
+
         try (PrintWriter out = new PrintWriter(new FileWriter(PRESENCE_FILE_NAME, true))) {
             out.println(employeeName + " - " + arrivalTime);
         }
     }
 
     private void writeLogoutToFile(String employeeName) {
-        try (PrintWriter out = new PrintWriter(new FileWriter(NOTIF_FILE_PATH, true))) {
+        if (employeeName == null) return;
+
+        try (PrintWriter out = new PrintWriter(new FileWriter(NOTIFICATION_FILE_PATH, true))) {
             out.println("LOGOUT:" + employeeName);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error writing logout notification: " + e.getMessage());
         }
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> AlertUtil.showErrorAlert(message));
+    }
+
+    private void showInfo(String message) {
+        Platform.runLater(() -> AlertUtil.showInfoAlert(message));
+    }
+
+    public void cleanup() {
+        stopTasksPolling();
     }
 }

@@ -11,15 +11,15 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import repository.SQLTaskRepository;
 import repository.SQLUserRepository;
-import repository.TextFileRepository;
 import utils.AlertUtil;
 
 import java.io.*;
 import java.util.*;
 
 public class ManagerController {
-    private static final String NOTIF_FILE_PATH = "MonitorizareAngajati/notificari.txt";
+    private static final String NOTIFICATION_FILE_PATH = "MonitorizareAngajati/notificari.txt";
     private static final String PRESENCE_FILE_PATH = "MonitorizareAngajati/prezenta.txt";
 
     @FXML private ListView<String> employeeListView;
@@ -30,14 +30,14 @@ public class ManagerController {
     @FXML private String managerName;
 
     private SQLUserRepository sqlUserRepository;
-    private TextFileRepository tasksTextFileRepository;
+    private SQLTaskRepository sqlTaskRepository;
     private ObservableList<String> employeeList = FXCollections.observableArrayList();
     private List<String> seenNotifications = new ArrayList<>();
     private List<String> seenPresence = new ArrayList<>();
 
-    public void setRepositories(SQLUserRepository sqlUserRepository, TextFileRepository tasksTextFileRepository) {
+    public void setRepositories(SQLUserRepository sqlUserRepository, SQLTaskRepository sqlTaskRepository) {
         this.sqlUserRepository = sqlUserRepository;
-        this.tasksTextFileRepository = tasksTextFileRepository;
+        this.sqlTaskRepository = sqlTaskRepository;
     }
 
     public void setManagerName(String managerName) {
@@ -68,7 +68,7 @@ public class ManagerController {
             int employeeId = findEmployeeIdByName(selectedEmployee);
             int taskId = randomIdGenerator();
             Task task = new Task(taskId, taskDescription, employeeId, status);
-            tasksTextFileRepository.add(task);
+            sqlTaskRepository.add(task);
 
             AlertUtil.showInfoAlert("Task assigned to " + selectedEmployee + ": " + taskDescription);
             taskDescriptionArea.clear();
@@ -144,7 +144,7 @@ public class ManagerController {
     }
 
     private void checkForNotifications() {
-        File file = new File(NOTIF_FILE_PATH);
+        File file = new File(NOTIFICATION_FILE_PATH);
         if (!file.exists()) return;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -194,7 +194,7 @@ public class ManagerController {
     }
 
     private void clearNotificationFile() {
-        try (PrintWriter writer = new PrintWriter(NOTIF_FILE_PATH)) {
+        try (PrintWriter writer = new PrintWriter(NOTIFICATION_FILE_PATH)) {
             writer.print("");
         } catch (IOException e) {
             e.printStackTrace();

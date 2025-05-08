@@ -5,7 +5,7 @@ import org.sqlite.SQLiteDataSource;
 import java.sql.*;
 
 public class SQLTaskRepository extends MemoryRepository<Task> implements AutoCloseable {
-    private static final String JDBC_URL = "jdbc:sqlite:C:/Users/rauld/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db";
+    private static final String JDBC_URL = "jdbc:sqlite:C:/Users/rauld/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db?journal_mode=WAL";
     private Connection connection;
 
     public SQLTaskRepository() {
@@ -24,11 +24,16 @@ public class SQLTaskRepository extends MemoryRepository<Task> implements AutoClo
                 int employeeId = rs.getInt("employeeId");
                 TaskStatus status = TaskStatus.valueOf(rs.getString("status"));
                 Task task = new Task(id, description, employeeId, status);
-
+                collection.add(task);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void reload() {
+        collection.clear();
+        loadData();
     }
 
     private void createSchema() {

@@ -1,6 +1,0 @@
-1799;capalit;2;PENDING
-6330;lalaalla;3;PENDING
-6616;aaa;2;PENDING
-9143;cules;4;PENDING
-3264;lololo;3;PENDING
-6482;Cartofi in gradina, de cules, URGENT!;2;PENDING
