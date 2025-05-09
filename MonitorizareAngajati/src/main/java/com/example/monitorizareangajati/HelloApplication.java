@@ -44,7 +44,7 @@ public class HelloApplication extends Application {
 
     public static void openEmployeeView(Stage stage, String employeeName) throws IOException {
         FXMLLoader loader = new FXMLLoader(HelloApplication.class.getResource("employee-view.fxml"));
-        Scene scene = new Scene(loader.load(), 400, 300);
+        Scene scene = new Scene(loader.load(), 600, 480);
 
         EmployeeController controller = loader.getController();
         controller.setEmployeeName(employeeName);
@@ -59,7 +59,7 @@ public class HelloApplication extends Application {
 
     public static void openManagerView(Stage stage, String managerName) throws IOException {
         FXMLLoader loader = new FXMLLoader(HelloApplication.class.getResource("manager-view.fxml"));
-        Scene scene = new Scene(loader.load(), 600, 400);
+        Scene scene = new Scene(loader.load(), 960, 480);
 
         ManagerController controller = loader.getController();
         controller.setManagerName(managerName);

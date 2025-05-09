@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.text.Text;
@@ -28,6 +29,8 @@ public class ManagerController {
     @FXML private Text messageText;
     @FXML private Button logoutButton;
     @FXML private String managerName;
+    @FXML private Button deleteTaskButton;
+    @FXML private Button updateTaskButton;
 
     private SQLUserRepository sqlUserRepository;
     private SQLTaskRepository sqlTaskRepository;
@@ -35,9 +38,15 @@ public class ManagerController {
     private List<String> seenNotifications = new ArrayList<>();
     private List<String> seenPresence = new ArrayList<>();
 
+    @FXML private ListView<Task> taskListView;
+    private ObservableList<Task> taskList = FXCollections.observableArrayList();
+
+
+    // === SETUP & INITIALIZATION ===
     public void setRepositories(SQLUserRepository sqlUserRepository, SQLTaskRepository sqlTaskRepository) {
         this.sqlUserRepository = sqlUserRepository;
         this.sqlTaskRepository = sqlTaskRepository;
+        initializeTaskData();
     }
 
     public void setManagerName(String managerName) {
@@ -53,6 +62,25 @@ public class ManagerController {
         startPresencePolling();
     }
 
+    private void initializeTaskData() {
+        taskListView.setItems(taskList);
+        taskListView.setCellFactory(_ -> new ListCell<>() {
+            @Override
+            protected void updateItem(Task task, boolean empty) {
+                super.updateItem(task, empty);
+                if (empty || task == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("ID: %d | %s | Assigned to ID: %d | Status: %s",
+                            task.getId(), task.getDescription(), task.getEmployeeId(), task.getStatus()));
+                }
+            }
+        });
+        loadAllTasks();
+        startTaskPolling();
+    }
+
+    // === BUTTON ACTIONS ===
     @FXML
     protected void onAssignTaskButtonClick() {
         String selectedEmployee = employeeListView.getSelectionModel().getSelectedItem();
@@ -79,7 +107,50 @@ public class ManagerController {
     }
 
     @FXML
+    protected void onDeleteTaskButtonClick() {
+        Task selectedTask = taskListView.getSelectionModel().getSelectedItem();
+        if (selectedTask == null) {
+            AlertUtil.showErrorAlert("Select a task to delete");
+            return;
+        }
+
+        try {
+            sqlTaskRepository.remove(selectedTask);
+            AlertUtil.showInfoAlert("Task deleted");
+            loadAllTasks();
+        } catch (Exception e) {
+            AlertUtil.showErrorAlert("Error deleting task: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    protected void onUpdateTaskButtonClick() {
+        Task selectedTask = taskListView.getSelectionModel().getSelectedItem();
+        if (selectedTask == null) {
+            AlertUtil.showErrorAlert("Select a task to update");
+            return;
+        }
+
+        String newDescription = taskDescriptionArea.getText();
+        if (newDescription == null || newDescription.isEmpty()) {
+            AlertUtil.showErrorAlert("Task description cannot be empty");
+            return;
+        }
+
+        try {
+            selectedTask.setDescription(newDescription);
+            sqlTaskRepository.update(selectedTask);
+            AlertUtil.showInfoAlert("Task updated");
+            loadAllTasks();
+            taskDescriptionArea.clear();
+        } catch (Exception e) {
+            AlertUtil.showErrorAlert("Error updating task: " + e.getMessage());
+        }
+    }
+
+    @FXML
     protected void onLogoutButtonClick() {
+        stopTaskPolling();
         try {
             Stage stage = (Stage) logoutButton.getScene().getWindow();
             HelloApplication.openUserView(stage);
@@ -88,6 +159,33 @@ public class ManagerController {
         }
     }
 
+    // === TASK LOADING ===
+    private void loadAllTasks() {
+        try {
+            List<Task> tasks = sqlTaskRepository.loadData();
+            Platform.runLater(() -> {
+                taskList.clear();
+                taskList.addAll(tasks);
+            });
+        } catch (Exception e) {
+            AlertUtil.showErrorAlert("Error loading tasks: " + e.getMessage());
+        }
+    }
+
+    private void checkForUpdatedTasks() {
+        try {
+            List<Task> latestTasks = sqlTaskRepository.loadData();
+            Platform.runLater(() -> {
+                if (!taskList.equals(latestTasks)) {
+                    taskList.setAll(latestTasks);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // === LOGIN / LOGOUT NOTIFICATIONS ===
     public void showEmployeeLogout(String employeeLine) {
         Platform.runLater(() -> {
             try {
@@ -114,25 +212,7 @@ public class ManagerController {
         });
     }
 
-    private int randomIdGenerator() {
-        Random random = new Random();
-        return 1000 + random.nextInt(9000);
-    }
-
-    private int findEmployeeIdByName(String employeeEntry) throws Exception {
-        String[] parts = employeeEntry.split(" - ");
-        if (parts.length < 1) {
-            throw new Exception("Invalid employee entry format: " + employeeEntry);
-        }
-        String username = parts[0].trim();
-
-        Integer employeeId = sqlUserRepository.getEmployeeIdByName(username);
-        if (employeeId == null) {
-            throw new Exception("Employee '" + username + "' not found in database");
-        }
-        return employeeId;
-    }
-
+    // === FILE POLLING ===
     private void startNotificationPolling() {
         Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -207,5 +287,46 @@ public class ManagerController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // === TASK POLLING ===
+    private Timer taskPollingTimer;
+
+    private void startTaskPolling() {
+        stopTaskPolling();
+        taskPollingTimer = new Timer(true);
+        taskPollingTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                checkForUpdatedTasks();
+            }
+        }, 0, 5000);
+    }
+
+    private void stopTaskPolling() {
+        if (taskPollingTimer != null) {
+            taskPollingTimer.cancel();
+            taskPollingTimer = null;
+        }
+    }
+
+    // === UTILITY METHODS ===
+    private int randomIdGenerator() {
+        Random random = new Random();
+        return 1000 + random.nextInt(9000);
+    }
+
+    private int findEmployeeIdByName(String employeeEntry) throws Exception {
+        String[] parts = employeeEntry.split(" - ");
+        if (parts.length < 1) {
+            throw new Exception("Invalid employee entry format: " + employeeEntry);
+        }
+        String username = parts[0].trim();
+
+        Integer employeeId = sqlUserRepository.getEmployeeIdByName(username);
+        if (employeeId == null) {
+            throw new Exception("Employee '" + username + "' not found in database");
+        }
+        return employeeId;
     }
 }

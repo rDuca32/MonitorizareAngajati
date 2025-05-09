@@ -23,7 +23,7 @@
         <TextField fx:id="arrivalHour" promptText="Enter arrival time (HH:MM)" prefWidth="200.0"/>
         <Button fx:id="markPresenceButton" text="Mark Presence" onAction="#onMarkPresenceButtonClick"/>
         <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick"/>
+        <Button fx:id="markDoneButton" text="Finish" onAction="#onMarkDoneButtonClick"/>
     </HBox>
-    <Button fx:id="markDoneButton" text="Done" onAction="#onMarkDoneButtonClick"/>
     <Text fx:id="messageText" style="-fx-font-size: 14px;"/>
 </VBox>

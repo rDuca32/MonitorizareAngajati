@@ -41,6 +41,8 @@ public class EmployeeController {
 
     private Timer tasksPollingTimer;
 
+    // === INITIALIZATION ===
+
     @FXML
     public void initialize() {
         tasksListView.setItems(observableTasks);
@@ -98,19 +100,19 @@ public class EmployeeController {
         this.employeeName = name;
     }
 
+    // === TASK HANDLING ===
+
     private void loadEmployeeTasks() {
         try {
             List<Task> allTasks = sqlTaskRepository.loadData();
-            List<Task> employeeTasks = allTasks.stream().filter(t -> employeeId.equals(t.getEmployeeId())).toList();
+            List<Task> employeeTasks = allTasks.stream()
+                    .filter(t -> employeeId.equals(t.getEmployeeId()))
+                    .toList();
 
             Platform.runLater(() -> {
                 observableTasks.clear();
                 observableTasks.addAll(employeeTasks);
-                if (observableTasks.isEmpty()) {
-                    messageText.setText(NO_TASKS_MESSAGE);
-                } else {
-                    messageText.setText("");
-                }
+                messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
             });
 
         } catch (Exception e) {
@@ -118,70 +120,26 @@ public class EmployeeController {
         }
     }
 
+    private List<Task> getEmployeeTasks() {
+        List<Task> allTasks = sqlTaskRepository.loadData();
+        if (allTasks == null) return Collections.emptyList();
+
+        return allTasks.stream()
+                .filter(Objects::nonNull)
+                .filter(task -> employeeId.equals(task.getEmployeeId()))
+                .collect(Collectors.toList());
+    }
+
     private void checkForNewTasks() {
         try {
             List<Task> currentTasks = getEmployeeTasks();
-
             Platform.runLater(() -> {
                 observableTasks.clear();
                 observableTasks.addAll(currentTasks);
-                if (observableTasks.isEmpty()) {
-                    messageText.setText(NO_TASKS_MESSAGE);
-                }
+                messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
             });
         } catch (Exception e) {
             System.err.println("Error checking for new tasks: " + e.getMessage());
-        }
-    }
-
-    private List<Task> getEmployeeTasks() {
-        List<Task> allTasks = sqlTaskRepository.loadData();
-        if (allTasks == null) {
-            return Collections.emptyList();
-        }
-
-        return allTasks.stream().filter(Objects::nonNull).filter(task -> employeeId.equals(task.getEmployeeId())).collect(Collectors.toList());
-    }
-
-    private void startTasksPolling() {
-        stopTasksPolling();
-        tasksPollingTimer = new Timer(true);
-        tasksPollingTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                checkForNewTasks();
-            }
-        }, 0, 5000);
-    }
-
-    @FXML
-    protected void onMarkPresenceButtonClick() {
-        String arrivalHourText = arrivalHour.getText();
-
-        if (arrivalHourText == null || arrivalHourText.trim().isEmpty()) {
-            showError("Arrival hour cannot be empty");
-            return;
-        }
-
-        try {
-            LocalTime.parse(arrivalHourText.trim());
-            writePresenceToFile(employeeName, arrivalHourText.trim());
-            showInfo("Successfully marked presence");
-        } catch (Exception e) {
-            showError("Invalid time format or failed to mark presence: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    protected void onLogoutButtonClick() {
-        stopTasksPolling();
-        writeLogoutToFile(employeeName);
-
-        try {
-            Stage stage = (Stage) logoutButton.getScene().getWindow();
-            HelloApplication.openUserView(stage);
-        } catch (Exception e) {
-            showError(e.getMessage());
         }
     }
 
@@ -208,11 +166,46 @@ public class EmployeeController {
         }
     }
 
+    // === PRESENCE ===
+
+    @FXML
+    protected void onMarkPresenceButtonClick() {
+        String arrivalHourText = arrivalHour.getText();
+
+        if (arrivalHourText == null || arrivalHourText.trim().isEmpty()) {
+            showError("Arrival hour cannot be empty");
+            return;
+        }
+
+        try {
+            LocalTime.parse(arrivalHourText.trim());
+            writePresenceToFile(employeeName, arrivalHourText.trim());
+            showInfo("Successfully marked presence");
+        } catch (Exception e) {
+            showError("Invalid time format or failed to mark presence: " + e.getMessage());
+        }
+    }
+
     private void writePresenceToFile(String employeeName, String arrivalTime) throws IOException {
         if (employeeName == null || arrivalTime == null) return;
 
         try (PrintWriter out = new PrintWriter(new FileWriter(PRESENCE_FILE_NAME, true))) {
             out.println(employeeName + " - " + arrivalTime);
+        }
+    }
+
+    // === LOGOUT ===
+
+    @FXML
+    protected void onLogoutButtonClick() {
+        stopTasksPolling();
+        writeLogoutToFile(employeeName);
+
+        try {
+            Stage stage = (Stage) logoutButton.getScene().getWindow();
+            HelloApplication.openUserView(stage);
+        } catch (Exception e) {
+            showError(e.getMessage());
         }
     }
 
@@ -226,12 +219,17 @@ public class EmployeeController {
         }
     }
 
-    private void showError(String message) {
-        Platform.runLater(() -> AlertUtil.showErrorAlert(message));
-    }
+    // === POLLING ===
 
-    private void showInfo(String message) {
-        Platform.runLater(() -> AlertUtil.showInfoAlert(message));
+    private void startTasksPolling() {
+        stopTasksPolling();
+        tasksPollingTimer = new Timer(true);
+        tasksPollingTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                checkForNewTasks();
+            }
+        }, 0, 5000);
     }
 
     private void stopTasksPolling() {
@@ -239,5 +237,15 @@ public class EmployeeController {
             tasksPollingTimer.cancel();
             tasksPollingTimer = null;
         }
+    }
+
+    // === UTILITY METHODS ===
+
+    private void showError(String message) {
+        Platform.runLater(() -> AlertUtil.showErrorAlert(message));
+    }
+
+    private void showInfo(String message) {
+        Platform.runLater(() -> AlertUtil.showInfoAlert(message));
     }
 }
