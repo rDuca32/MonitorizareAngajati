@@ -11,7 +11,7 @@ public class Task extends Entity implements Serializable {
         super(id);
         this.description = description;
         this.employeeId = employeeId;
-        this.status = TaskStatus.PENDING;
+        this.status = TaskStatus.valueOf(status.name());
     }
 
     public String getDescription() {
@@ -30,7 +30,10 @@ public class Task extends Entity implements Serializable {
         return status;
     }
 
-    public void setStatus(TaskStatus status) {
-        this.status = status;
+    public void setStatus(TaskStatus status) { this.status = status;}
+
+    @Override
+    public String toString() {
+        return "Task: " + description + ", " + employeeId + ", " + status;
     }
 }

@@ -3,6 +3,8 @@ package repository;
 import domain.*;
 import org.sqlite.SQLiteDataSource;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SQLTaskRepository extends MemoryRepository<Task> implements AutoCloseable {
     private static final String JDBC_URL = "jdbc:sqlite:C:/Users/rauld/Documents/GitHub/MonitorizareAngajati/MonitorizareAngajati/monitorizare_angajati.db?journal_mode=WAL";
@@ -14,26 +16,25 @@ public class SQLTaskRepository extends MemoryRepository<Task> implements AutoClo
         loadData();
     }
 
-    private void loadData() {
-        try{
-            PreparedStatement statement = connection.prepareStatement("select * from tasks");
-            ResultSet rs = statement.executeQuery();
+    public List<Task> loadData() {
+        List<Task> tasks = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM tasks")) {
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String description = rs.getString("description");
                 int employeeId = rs.getInt("employeeId");
-                TaskStatus status = TaskStatus.valueOf(rs.getString("status"));
+                TaskStatus status = TaskStatus.valueOf(rs.getString("status").toUpperCase());
+
                 Task task = new Task(id, description, employeeId, status);
-                collection.add(task);
+                tasks.add(task);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to load tasks", e);
         }
-    }
 
-    public void reload() {
-        collection.clear();
-        loadData();
+        return tasks;
     }
 
     private void createSchema() {
@@ -65,7 +66,7 @@ public class SQLTaskRepository extends MemoryRepository<Task> implements AutoClo
             statement.setInt(1, task.getId());
             statement.setString(2, task.getDescription());
             statement.setInt(3, task.getEmployeeId());
-            statement.setString(4, task.getStatus().toString());
+            statement.setString(4, task.getStatus().toString().toUpperCase());
             statement.executeUpdate();
             collection.add(task);
 
@@ -92,9 +93,11 @@ public class SQLTaskRepository extends MemoryRepository<Task> implements AutoClo
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, task.getDescription());
             statement.setInt(2, task.getEmployeeId());
-            statement.setString(3, task.getStatus().toString());
+            statement.setString(3, task.getStatus().toString().toUpperCase());
             statement.setInt(4, task.getId());
             statement.executeUpdate();
+            collection.remove(task);
+            collection.add(task);
         } catch (SQLException e) {
             throw new RepositoryException("Error updating task: " + e.getMessage());
         }

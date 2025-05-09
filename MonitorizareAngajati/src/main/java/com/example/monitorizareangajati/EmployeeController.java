@@ -4,11 +4,13 @@ import domain.Task;
 import domain.TaskStatus;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import repository.RepositoryException;
 import repository.SQLTaskRepository;
 import repository.SQLUserRepository;
 import utils.AlertUtil;
@@ -28,10 +30,10 @@ public class EmployeeController {
     @FXML private Button markPresenceButton;
     @FXML private TextField arrivalHour;
     @FXML private Button logoutButton;
-    @FXML private ListView<String> tasksListView;
+    @FXML private Button markDoneButton;
+    @FXML private ListView<Task> tasksListView;
 
-    private final ObservableList<String> tasksList = FXCollections.observableArrayList();
-    private final Set<Integer> knownTaskIds = new HashSet<>();
+    private final ObservableList<Task> observableTasks = FXCollections.observableArrayList();
     private Integer employeeId;
 
     private SQLUserRepository sqlUserRepository;
@@ -41,7 +43,36 @@ public class EmployeeController {
 
     @FXML
     public void initialize() {
-        tasksListView.setItems(tasksList);
+        tasksListView.setItems(observableTasks);
+
+        observableTasks.addListener((ListChangeListener<Task>) change -> {
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    Platform.runLater(() -> {
+                        if (observableTasks.isEmpty()) {
+                            messageText.setText(NO_TASKS_MESSAGE);
+                        } else {
+                            messageText.setText("");
+                        }
+                    });
+                }
+            }
+        });
+
+        tasksListView.setCellFactory(_ -> new ListCell<>() {
+            @Override
+            protected void updateItem(Task task, boolean empty) {
+                super.updateItem(task, empty);
+                if (empty || task == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("ID: %d | %s | Status: %s",
+                            task.getId(),
+                            Optional.ofNullable(task.getDescription()).orElse("No description"),
+                            task.getStatus()));
+                }
+            }
+        });
     }
 
     public void initializeAfterRepo() {
@@ -69,24 +100,42 @@ public class EmployeeController {
 
     private void loadEmployeeTasks() {
         try {
-            tasksList.clear();
-            knownTaskIds.clear();
+            List<Task> allTasks = sqlTaskRepository.loadData();
+            List<Task> employeeTasks = allTasks.stream().filter(t -> employeeId.equals(t.getEmployeeId())).toList();
 
-            List<Task> employeeTasks = getEmployeeTasks();
+            Platform.runLater(() -> {
+                observableTasks.clear();
+                observableTasks.addAll(employeeTasks);
+                if (observableTasks.isEmpty()) {
+                    messageText.setText(NO_TASKS_MESSAGE);
+                } else {
+                    messageText.setText("");
+                }
+            });
 
-            if (employeeTasks.isEmpty()) {
-                tasksList.add(NO_TASKS_MESSAGE);
-                return;
-            }
-
-            employeeTasks.forEach(this::addTaskToList);
         } catch (Exception e) {
             showError("Failed to load tasks: " + e.getMessage());
         }
     }
 
+    private void checkForNewTasks() {
+        try {
+            List<Task> currentTasks = getEmployeeTasks();
+
+            Platform.runLater(() -> {
+                observableTasks.clear();
+                observableTasks.addAll(currentTasks);
+                if (observableTasks.isEmpty()) {
+                    messageText.setText(NO_TASKS_MESSAGE);
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Error checking for new tasks: " + e.getMessage());
+        }
+    }
+
     private List<Task> getEmployeeTasks() {
-        List<Task> allTasks = (List<Task>) sqlTaskRepository.getAll();
+        List<Task> allTasks = sqlTaskRepository.loadData();
         if (allTasks == null) {
             return Collections.emptyList();
         }
@@ -103,54 +152,6 @@ public class EmployeeController {
                 checkForNewTasks();
             }
         }, 0, 5000);
-    }
-
-    private void stopTasksPolling() {
-        if (tasksPollingTimer != null) {
-            tasksPollingTimer.cancel();
-            tasksPollingTimer = null;
-        }
-    }
-
-    private void checkForNewTasks() {
-        try {
-            sqlTaskRepository.reload();
-
-            List<Task> currentTasks = getEmployeeTasks();
-
-            Platform.runLater(() -> {
-                boolean hasNewTasks = false;
-
-                for (Task task : currentTasks) {
-                    if (!knownTaskIds.contains(task.getId())) {
-                        addTaskToList(task);
-                        hasNewTasks = true;
-                    }
-                }
-
-                if (hasNewTasks && !tasksList.isEmpty() && NO_TASKS_MESSAGE.equals(tasksList.get(0))) {
-                    tasksList.remove(0);
-                }
-            });
-        } catch (Exception e) {
-            System.err.println("Error checking for new tasks: " + e.getMessage());
-        }
-    }
-
-
-    private void addTaskToList(Task task) {
-        if (task == null) return;
-
-        String taskDisplay = formatTaskDisplay(task);
-
-        if (!tasksList.contains(taskDisplay)) {
-            tasksList.add(taskDisplay);
-            knownTaskIds.add(task.getId());
-        }
-    }
-
-    private String formatTaskDisplay(Task task) {
-        return String.format("ID: %d | %s | Status: %s", task.getId(), Optional.ofNullable(task.getDescription()).orElse("No description"), Optional.ofNullable(task.getStatus()).orElse(TaskStatus.PENDING));
     }
 
     @FXML
@@ -184,6 +185,29 @@ public class EmployeeController {
         }
     }
 
+    @FXML
+    protected void onMarkDoneButtonClick() {
+        Task selectedTask = tasksListView.getSelectionModel().getSelectedItem();
+        if (selectedTask == null) {
+            showError("Select a task first");
+            return;
+        }
+
+        try {
+            if (selectedTask.getStatus() == TaskStatus.FINISHED) {
+                showInfo("Task already finished");
+                return;
+            }
+
+            selectedTask.setStatus(TaskStatus.FINISHED);
+            sqlTaskRepository.update(selectedTask);
+            loadEmployeeTasks();
+
+        } catch (RepositoryException e) {
+            showError("Failed to update task: " + e.getMessage());
+        }
+    }
+
     private void writePresenceToFile(String employeeName, String arrivalTime) throws IOException {
         if (employeeName == null || arrivalTime == null) return;
 
@@ -210,7 +234,10 @@ public class EmployeeController {
         Platform.runLater(() -> AlertUtil.showInfoAlert(message));
     }
 
-    public void cleanup() {
-        stopTasksPolling();
+    private void stopTasksPolling() {
+        if (tasksPollingTimer != null) {
+            tasksPollingTimer.cancel();
+            tasksPollingTimer = null;
+        }
     }
 }

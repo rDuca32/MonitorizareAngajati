@@ -24,5 +24,6 @@
         <Button fx:id="markPresenceButton" text="Mark Presence" onAction="#onMarkPresenceButtonClick"/>
         <Button fx:id="logoutButton" text="Logout" onAction="#onLogoutButtonClick"/>
     </HBox>
+    <Button fx:id="markDoneButton" text="Done" onAction="#onMarkDoneButtonClick"/>
     <Text fx:id="messageText" style="-fx-font-size: 14px;"/>
 </VBox>

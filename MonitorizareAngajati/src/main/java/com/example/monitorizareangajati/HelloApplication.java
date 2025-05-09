@@ -1,6 +1,5 @@
 package com.example.monitorizareangajati;
 
-import domain.Task;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
