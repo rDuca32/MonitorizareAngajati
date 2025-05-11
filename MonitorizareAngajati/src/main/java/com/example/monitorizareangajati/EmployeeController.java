@@ -105,9 +105,7 @@ public class EmployeeController {
     private void loadEmployeeTasks() {
         try {
             List<Task> allTasks = sqlTaskRepository.loadData();
-            List<Task> employeeTasks = allTasks.stream()
-                    .filter(t -> employeeId.equals(t.getEmployeeId()))
-                    .toList();
+            List<Task> employeeTasks = allTasks.stream().filter(t -> employeeId.equals(t.getEmployeeId())).toList();
 
             Platform.runLater(() -> {
                 observableTasks.clear();
@@ -124,10 +122,7 @@ public class EmployeeController {
         List<Task> allTasks = sqlTaskRepository.loadData();
         if (allTasks == null) return Collections.emptyList();
 
-        return allTasks.stream()
-                .filter(Objects::nonNull)
-                .filter(task -> employeeId.equals(task.getEmployeeId()))
-                .collect(Collectors.toList());
+        return allTasks.stream().filter(Objects::nonNull).filter(task -> employeeId.equals(task.getEmployeeId())).collect(Collectors.toList());
     }
 
     private void checkForNewTasks() {
