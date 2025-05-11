@@ -24,6 +24,7 @@ public class EmployeeController {
     private static final String PRESENCE_FILE_NAME = "MonitorizareAngajati/prezenta.txt";
     private static final String NOTIFICATION_FILE_PATH = "MonitorizareAngajati/notificari.txt";
     private static final String NO_TASKS_MESSAGE = "No tasks assigned yet";
+    private static final Integer TIMER_PERIOD = 5000;
 
     @FXML private Text messageText;
     @FXML private String employeeName;
@@ -40,8 +41,15 @@ public class EmployeeController {
     private SQLTaskRepository sqlTaskRepository;
 
     private Timer tasksPollingTimer;
+    private boolean presenceMarked = false;
 
     // === INITIALIZATION ===
+
+    private void setControlsEnabled(boolean enabled) {
+        tasksListView.setDisable(!enabled);
+        markDoneButton.setDisable(!enabled);
+        logoutButton.setDisable(!enabled);
+    }
 
     @FXML
     public void initialize() {
@@ -75,6 +83,8 @@ public class EmployeeController {
                 }
             }
         });
+
+        setControlsEnabled(false);
     }
 
     public void initializeAfterRepo() {
@@ -108,8 +118,10 @@ public class EmployeeController {
             List<Task> employeeTasks = allTasks.stream().filter(t -> employeeId.equals(t.getEmployeeId())).toList();
 
             Platform.runLater(() -> {
+                Task selectedTask = tasksListView.getSelectionModel().getSelectedItem();
                 observableTasks.clear();
                 observableTasks.addAll(employeeTasks);
+                restoreTaskSelection(selectedTask);
                 messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
             });
 
@@ -129,8 +141,10 @@ public class EmployeeController {
         try {
             List<Task> currentTasks = getEmployeeTasks();
             Platform.runLater(() -> {
+                Task selectedTask = tasksListView.getSelectionModel().getSelectedItem();
                 observableTasks.clear();
                 observableTasks.addAll(currentTasks);
+                restoreTaskSelection(selectedTask);
                 messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
             });
         } catch (Exception e) {
@@ -161,6 +175,17 @@ public class EmployeeController {
         }
     }
 
+    private void restoreTaskSelection(Task previouslySelected) {
+        if (previouslySelected != null) {
+            for (Task task : observableTasks) {
+                if (task.getId() == previouslySelected.getId()) {
+                    tasksListView.getSelectionModel().select(task);
+                    break;
+                }
+            }
+        }
+    }
+
     // === PRESENCE ===
 
     @FXML
@@ -175,6 +200,8 @@ public class EmployeeController {
         try {
             LocalTime.parse(arrivalHourText.trim());
             writePresenceToFile(employeeName, arrivalHourText.trim());
+            presenceMarked = true;
+            setControlsEnabled(true);
             showInfo("Successfully marked presence");
         } catch (Exception e) {
             showError("Invalid time format or failed to mark presence: " + e.getMessage());
@@ -193,6 +220,11 @@ public class EmployeeController {
 
     @FXML
     protected void onLogoutButtonClick() {
+        if (!presenceMarked || arrivalHour.getText() == null || arrivalHour.getText().trim().isEmpty()) {
+            showError("You must enter your arrival hour and mark presence before logging out.");
+            return;
+        }
+
         stopTasksPolling();
         writeLogoutToFile(employeeName);
 
@@ -224,7 +256,7 @@ public class EmployeeController {
             public void run() {
                 checkForNewTasks();
             }
-        }, 0, 5000);
+        }, 0, TIMER_PERIOD);
     }
 
     private void stopTasksPolling() {

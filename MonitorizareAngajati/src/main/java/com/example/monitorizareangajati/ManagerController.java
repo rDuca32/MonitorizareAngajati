@@ -22,6 +22,7 @@ import java.util.*;
 public class ManagerController {
     private static final String NOTIFICATION_FILE_PATH = "MonitorizareAngajati/notificari.txt";
     private static final String PRESENCE_FILE_PATH = "MonitorizareAngajati/prezenta.txt";
+    private static final Integer TIMER_PERIOD = 5000;
 
     @FXML private ListView<String> employeeListView;
     @FXML private TextArea taskDescriptionArea;
@@ -167,8 +168,17 @@ public class ManagerController {
         try {
             List<Task> tasks = sqlTaskRepository.loadData();
             Platform.runLater(() -> {
+                Task selectedTask = taskListView.getSelectionModel().getSelectedItem();
                 taskList.clear();
                 taskList.addAll(tasks);
+                if (selectedTask != null) {
+                    for (Task task : taskList) {
+                        if (task.getId() == selectedTask.getId()) {
+                            taskListView.getSelectionModel().select(task);
+                            break;
+                        }
+                    }
+                }
             });
         } catch (Exception e) {
             AlertUtil.showErrorAlert("Error loading tasks: " + e.getMessage());
@@ -179,8 +189,15 @@ public class ManagerController {
         try {
             List<Task> latestTasks = sqlTaskRepository.loadData();
             Platform.runLater(() -> {
-                if (!taskList.equals(latestTasks)) {
-                    taskList.setAll(latestTasks);
+                Task selectedTask = taskListView.getSelectionModel().getSelectedItem();
+                taskList.setAll(latestTasks);
+                if (selectedTask != null) {
+                    for (Task task : taskList) {
+                        if (task.getId() == selectedTask.getId()) {
+                            taskListView.getSelectionModel().select(task);
+                            break;
+                        }
+                    }
                 }
             });
         } catch (Exception e) {
@@ -225,7 +242,7 @@ public class ManagerController {
             public void run() {
                 checkForNotifications();
             }
-        }, 0, 5000);
+        }, 0, TIMER_PERIOD);
     }
 
     private void checkForNotifications() {
@@ -257,7 +274,7 @@ public class ManagerController {
             public void run() {
                 checkForPresence();
             }
-        }, 0, 5000);
+        }, 0, TIMER_PERIOD);
     }
 
     private void checkForPresence() {
@@ -306,7 +323,7 @@ public class ManagerController {
             public void run() {
                 checkForUpdatedTasks();
             }
-        }, 0, 5000);
+        }, 0, TIMER_PERIOD);
     }
 
     private void stopTaskPolling() {
