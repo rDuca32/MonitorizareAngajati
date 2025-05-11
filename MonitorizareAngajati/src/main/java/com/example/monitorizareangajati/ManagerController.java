@@ -43,6 +43,7 @@ public class ManagerController {
 
 
     // === SETUP & INITIALIZATION ===
+
     public void setRepositories(SQLUserRepository sqlUserRepository, SQLTaskRepository sqlTaskRepository) {
         this.sqlUserRepository = sqlUserRepository;
         this.sqlTaskRepository = sqlTaskRepository;
@@ -81,6 +82,7 @@ public class ManagerController {
     }
 
     // === BUTTON ACTIONS ===
+
     @FXML
     protected void onAssignTaskButtonClick() {
         String selectedEmployee = employeeListView.getSelectionModel().getSelectedItem();
@@ -160,6 +162,7 @@ public class ManagerController {
     }
 
     // === TASK LOADING ===
+
     private void loadAllTasks() {
         try {
             List<Task> tasks = sqlTaskRepository.loadData();
@@ -186,6 +189,7 @@ public class ManagerController {
     }
 
     // === LOGIN / LOGOUT NOTIFICATIONS ===
+
     public void showEmployeeLogout(String employeeLine) {
         Platform.runLater(() -> {
             try {
@@ -213,6 +217,7 @@ public class ManagerController {
     }
 
     // === FILE POLLING ===
+
     private void startNotificationPolling() {
         Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -290,6 +295,7 @@ public class ManagerController {
     }
 
     // === TASK POLLING ===
+
     private Timer taskPollingTimer;
 
     private void startTaskPolling() {
@@ -311,6 +317,7 @@ public class ManagerController {
     }
 
     // === UTILITY METHODS ===
+
     private int randomIdGenerator() {
         Random random = new Random();
         return 1000 + random.nextInt(9000);
