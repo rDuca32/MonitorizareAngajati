@@ -76,10 +76,7 @@ public class EmployeeController {
                 if (empty || task == null) {
                     setText(null);
                 } else {
-                    setText(String.format("ID: %d | %s | Status: %s",
-                            task.getId(),
-                            Optional.ofNullable(task.getDescription()).orElse("No description"),
-                            task.getStatus()));
+                    setText(String.format("ID: %d | %s | Status: %s", task.getId(), Optional.ofNullable(task.getDescription()).orElse("No description"), task.getStatus()));
                 }
             }
         });
@@ -122,7 +119,11 @@ public class EmployeeController {
                 observableTasks.clear();
                 observableTasks.addAll(employeeTasks);
                 restoreTaskSelection(selectedTask);
-                messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
+                if (observableTasks.isEmpty()){
+                    messageText.setText(NO_TASKS_MESSAGE);
+                } else {
+                    messageText.setText("");
+                }
             });
 
         } catch (Exception e) {
@@ -145,7 +146,11 @@ public class EmployeeController {
                 observableTasks.clear();
                 observableTasks.addAll(currentTasks);
                 restoreTaskSelection(selectedTask);
-                messageText.setText(observableTasks.isEmpty() ? NO_TASKS_MESSAGE : "");
+                if (observableTasks.isEmpty()){
+                    messageText.setText(NO_TASKS_MESSAGE);
+                } else {
+                    messageText.setText("");
+                }
             });
         } catch (Exception e) {
             System.err.println("Error checking for new tasks: " + e.getMessage());
